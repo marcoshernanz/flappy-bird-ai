@@ -99,6 +99,7 @@ async fn main() {
     loop {
         handle_bird_jump(&mut bird);
         apply_physics(&mut bird, &mut obstacles);
+        check_collisions(&mut bird, &mut obstacles);
         handle_draw(&bird, &obstacles);
 
         next_frame().await
@@ -136,6 +137,37 @@ fn apply_physics(bird: &mut Bird, obstacles: &mut Obstacles) {
     }
 }
 
+fn check_collisions(bird: &mut Bird, obstacles: &mut Obstacles) {
+    for obstacle in obstacles.obstacles.iter() {
+        println!("{} {}", bird.y, bird.r);
+        if bird.y + bird.r > screen_height()
+            || bird.y - bird.r < 0.0
+            || circle_intersects_rect(
+                bird.x,
+                bird.y,
+                bird.r,
+                obstacle.x,
+                0.0,
+                obstacle.width,
+                obstacle.y,
+            )
+            || circle_intersects_rect(
+                bird.x,
+                bird.y,
+                bird.r,
+                obstacle.x,
+                obstacle.y + obstacle.gap,
+                obstacle.width,
+                screen_height() - obstacle.y - obstacle.gap,
+            )
+        {
+            *bird = Bird::new();
+            *obstacles = Obstacles::new();
+            return;
+        }
+    }
+}
+
 fn handle_draw(bird: &Bird, obstacles: &Obstacles) {
     clear_background(BLACK);
 
@@ -147,8 +179,28 @@ fn handle_draw(bird: &Bird, obstacles: &Obstacles) {
             obstacle.x,
             obstacle.y + obstacle.gap,
             obstacle.width,
-            screen_width() - obstacle.y - obstacle.gap,
+            screen_height() - obstacle.y - obstacle.gap,
             obstacle.color,
         );
     }
+}
+
+fn circle_intersects_rect(
+    circle_x: f32,
+    circle_y: f32,
+    circle_r: f32,
+    rect_x: f32,
+    rect_y: f32,
+    rect_w: f32,
+    rect_h: f32,
+) -> bool {
+    let closest_x = circle_x.clamp(rect_x, rect_x + rect_w);
+    let closest_y = circle_y.clamp(rect_y, rect_y + rect_h);
+
+    let distance_x = circle_x - closest_x;
+    let distance_y = circle_y - closest_y;
+
+    let distance_squared = (distance_x * distance_x) + (distance_y * distance_y);
+
+    distance_squared < (circle_r * circle_r)
 }
