@@ -10,6 +10,7 @@ pub struct Bird {
 
     pub speed: f32,
     pub acceleration: f32,
+    pub is_alive: bool,
 }
 
 impl Bird {
@@ -21,6 +22,7 @@ impl Bird {
             color: CONFIG.bird_color,
             speed: 0.0,
             acceleration: CONFIG.gravity,
+            is_alive: true,
         }
     }
 

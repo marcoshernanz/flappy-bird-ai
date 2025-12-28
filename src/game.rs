@@ -4,7 +4,7 @@ use crate::obstacle::ObstacleManager;
 use macroquad::prelude::*;
 
 pub struct Game {
-    pub bird: Bird,
+    pub birds: Vec<Bird>,
     pub obstacle_manager: ObstacleManager,
     pub game_over: bool,
 }
@@ -12,7 +12,7 @@ pub struct Game {
 impl Game {
     pub fn new() -> Self {
         Self {
-            bird: Bird::new(),
+            birds: vec![Bird::new()],
             obstacle_manager: ObstacleManager::new(),
             game_over: false,
         }
@@ -27,58 +27,85 @@ impl Game {
         }
 
         if is_key_pressed(KeyCode::Space) {
-            self.bird.jump();
+            for bird in &mut self.birds {
+                if bird.is_alive {
+                    bird.jump();
+                }
+            }
         }
 
-        self.bird.update();
+        for bird in &mut self.birds {
+            if bird.is_alive {
+                bird.update();
+            }
+        }
+
         self.obstacle_manager.update();
 
         self.check_collisions();
+
+        if self.birds.iter().all(|b| !b.is_alive) {
+            self.game_over = true;
+        }
     }
 
     pub fn draw(&self) {
         clear_background(BLACK);
-        self.bird.draw();
+
         self.obstacle_manager.draw();
+
+        for bird in &self.birds {
+            if bird.is_alive {
+                bird.draw();
+            }
+        }
     }
 
     fn check_collisions(&mut self) {
-        if self.bird.y + self.bird.r > screen_height() || self.bird.y - self.bird.r < 0.0 {
-            self.game_over = true;
-            return;
-        }
-
-        for obstacle in &self.obstacle_manager.obstacles {
-            if circle_intersects_rect(
-                self.bird.x,
-                self.bird.y,
-                self.bird.r,
-                obstacle.x,
-                0.0,
-                obstacle.width,
-                obstacle.y,
-            ) {
-                self.game_over = true;
-                return;
+        for bird in &mut self.birds {
+            if !bird.is_alive {
+                continue;
             }
 
-            if circle_intersects_rect(
-                self.bird.x,
-                self.bird.y,
-                self.bird.r,
-                obstacle.x,
-                obstacle.y + obstacle.gap,
-                obstacle.width,
-                screen_height() - obstacle.y - obstacle.gap,
-            ) {
-                self.game_over = true;
-                return;
+            if bird.y + bird.r > screen_height() || bird.y - bird.r < 0.0 {
+                bird.is_alive = false;
+                continue;
+            }
+
+            for obstacle in &self.obstacle_manager.obstacles {
+                if circle_intersects_rect(
+                    bird.x,
+                    bird.y,
+                    bird.r,
+                    obstacle.x,
+                    0.0,
+                    obstacle.width,
+                    obstacle.y,
+                ) {
+                    bird.is_alive = false;
+                    break;
+                }
+
+                if circle_intersects_rect(
+                    bird.x,
+                    bird.y,
+                    bird.r,
+                    obstacle.x,
+                    obstacle.y + obstacle.gap,
+                    obstacle.width,
+                    screen_height() - obstacle.y - obstacle.gap,
+                ) {
+                    bird.is_alive = false;
+                    break;
+                }
             }
         }
     }
 
     pub fn reset(&mut self) {
-        self.bird.reset();
+        for bird in &mut self.birds {
+            bird.reset();
+        }
         self.obstacle_manager.reset();
         self.game_over = false;
     }
