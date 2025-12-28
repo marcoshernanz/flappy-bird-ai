@@ -140,23 +140,19 @@ fn apply_physics(bird: &mut Bird, obstacles: &mut Obstacles) {
 
     obstacles.speed += obstacles.acceleration;
 
-    let mut to_remove = Vec::new();
-    let mut to_add = 0;
-    for (index, obstacle) in obstacles.obstacles.iter_mut().enumerate() {
+    obstacles.speed += obstacles.acceleration;
+    for obstacle in &mut obstacles.obstacles {
         obstacle.x -= obstacles.speed;
-        if obstacle.x + obstacle.width < 0.0 {
-            to_remove.push(index);
-        } else if obstacle.x + obstacle.width <= screen_width() - obstacles.gap
-            && obstacle.x + obstacle.width + obstacles.speed > screen_width() - obstacles.gap
-        {
-            to_add += 1;
-        }
     }
 
-    for index in to_remove {
-        obstacles.obstacles.remove(index);
-    }
-    for _ in 0..to_add {
+    obstacles.obstacles.retain(|o| o.x + o.width > 0.0);
+
+    let needs_spawn = match obstacles.obstacles.last() {
+        Some(last_obstacle) => screen_width() - last_obstacle.x > obstacles.gap,
+        None => true,
+    };
+
+    if needs_spawn {
         obstacles.obstacles.push(Obstacle::new());
     }
 }
