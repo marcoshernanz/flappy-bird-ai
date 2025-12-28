@@ -1,25 +1,39 @@
 use macroquad::prelude::*;
 
 struct GameConfig {
-    bird_size: f32,
-    bird_color: Color,
     gravity: f32,
     jump_force: f32,
+
+    bird_size: f32,
+    bird_color: Color,
+
     obstacle_width: f32,
     obstacle_color: Color,
+    obstacle_min_gap: f32,
+    obstacle_max_gap: f32,
+    obstacle_min_y: f32,
+
     obstacles_speed: f32,
+    obstacles_acceleration: f32,
     obstacles_gap: f32,
 }
 
 const CONFIG: GameConfig = GameConfig {
-    bird_size: 50.0,
-    bird_color: WHITE,
     gravity: -0.25,
     jump_force: 10.0,
+
+    bird_size: 50.0,
+    bird_color: WHITE,
+
     obstacle_width: 30.0,
     obstacle_color: RED,
+    obstacle_min_gap: 200.0,
+    obstacle_max_gap: 500.0,
+    obstacle_min_y: 250.0,
+
     obstacles_speed: 5.0,
-    obstacles_gap: 500.0,
+    obstacles_acceleration: 0.001,
+    obstacles_gap: 400.0,
 };
 
 struct Bird {
@@ -57,8 +71,12 @@ impl Obstacle {
     fn new() -> Obstacle {
         Obstacle {
             x: screen_width(),
-            y: 300.0,
-            gap: 500.0,
+            y: rand::gen_range(
+                CONFIG.obstacle_min_y,
+                // screen_height() - CONFIG.obstacle_min_y,
+                CONFIG.obstacle_min_y + 10.0,
+            ),
+            gap: rand::gen_range(CONFIG.obstacle_min_gap, CONFIG.obstacle_max_gap),
             width: CONFIG.obstacle_width,
             color: CONFIG.obstacle_color,
         }
@@ -68,6 +86,7 @@ impl Obstacle {
 struct Obstacles {
     obstacles: Vec<Obstacle>,
     speed: f32,
+    acceleration: f32,
     gap: f32,
 }
 
@@ -76,6 +95,7 @@ impl Obstacles {
         Obstacles {
             obstacles: vec![Obstacle::new()],
             speed: CONFIG.obstacles_speed,
+            acceleration: CONFIG.obstacles_acceleration,
             gap: CONFIG.obstacles_gap,
         }
     }
@@ -116,6 +136,8 @@ fn apply_physics(bird: &mut Bird, obstacles: &mut Obstacles) {
     bird.speed += bird.acceleration;
     bird.y -= bird.speed;
 
+    obstacles.speed += obstacles.acceleration;
+
     let mut to_remove = Vec::new();
     let mut to_add = 0;
     for (index, obstacle) in obstacles.obstacles.iter_mut().enumerate() {
@@ -139,7 +161,6 @@ fn apply_physics(bird: &mut Bird, obstacles: &mut Obstacles) {
 
 fn check_collisions(bird: &mut Bird, obstacles: &mut Obstacles) {
     for obstacle in obstacles.obstacles.iter() {
-        println!("{} {}", bird.y, bird.r);
         if bird.y + bird.r > screen_height()
             || bird.y - bird.r < 0.0
             || circle_intersects_rect(
