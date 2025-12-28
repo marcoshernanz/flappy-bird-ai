@@ -2,6 +2,7 @@ mod bird;
 mod collisions;
 mod config;
 mod game;
+mod neural_network;
 mod obstacle;
 
 use game::Game;

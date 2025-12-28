@@ -1,5 +1,6 @@
 use crate::bird::Bird;
 use crate::collisions::circle_intersects_rect;
+use crate::config::CONFIG;
 use crate::obstacle::ObstacleManager;
 use macroquad::prelude::*;
 
@@ -7,29 +8,47 @@ pub struct Game {
     pub birds: Vec<Bird>,
     pub obstacle_manager: ObstacleManager,
     pub game_over: bool,
+    pub generation: u32,
 }
 
 impl Game {
     pub fn new() -> Self {
         Self {
-            birds: vec![Bird::new()],
+            birds: (0..CONFIG.population_size)
+                .map(|_| Bird::new(None))
+                .collect(),
             obstacle_manager: ObstacleManager::new(),
             game_over: false,
+            generation: 1,
         }
     }
 
     pub fn update(&mut self) {
         if self.game_over {
-            if is_key_pressed(KeyCode::Space) {
-                self.reset();
-            }
+            self.next_generation();
             return;
         }
 
-        if is_key_pressed(KeyCode::Space) {
+        let next_obstacle = self
+            .obstacle_manager
+            .obstacles
+            .iter()
+            .find(|o| o.x + o.width > self.birds[0].x);
+
+        if let Some(obstacle) = next_obstacle {
             for bird in &mut self.birds {
                 if bird.is_alive {
-                    bird.jump();
+                    let inputs = vec![
+                        bird.y / screen_height(),
+                        bird.speed / 10.0,
+                        (obstacle.x - bird.x) / screen_width(),
+                        obstacle.y / screen_height(),
+                    ];
+
+                    let output = bird.brain.feed_forward(inputs);
+                    if output[0] > 0.5 {
+                        bird.jump();
+                    }
                 }
             }
         }
@@ -59,6 +78,16 @@ impl Game {
                 bird.draw();
             }
         }
+
+        draw_text(
+            &format!("Generation: {}", self.generation),
+            10.0,
+            20.0,
+            30.0,
+            WHITE,
+        );
+        let alive_count = self.birds.iter().filter(|b| b.is_alive).count();
+        draw_text(&format!("Alive: {}", alive_count), 10.0, 50.0, 30.0, WHITE);
     }
 
     fn check_collisions(&mut self) {
@@ -102,12 +131,27 @@ impl Game {
         }
     }
 
-    pub fn reset(&mut self) {
-        for bird in &mut self.birds {
-            bird.reset();
+    fn next_generation(&mut self) {
+        let best_bird = self
+            .birds
+            .iter()
+            .max_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap())
+            .unwrap()
+            .clone();
+
+        self.birds.clear();
+
+        self.birds.push(Bird::new(Some(best_bird.brain.clone())));
+
+        for _ in 1..CONFIG.population_size {
+            let mut new_brain = best_bird.brain.clone();
+            new_brain.mutate(CONFIG.mutation_rate);
+            self.birds.push(Bird::new(Some(new_brain)));
         }
+
         self.obstacle_manager.reset();
         self.game_over = false;
+        self.generation += 1;
     }
 }
 

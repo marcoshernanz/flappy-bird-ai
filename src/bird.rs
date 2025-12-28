@@ -1,4 +1,5 @@
 use crate::config::CONFIG;
+use crate::neural_network::Network;
 use macroquad::prelude::*;
 
 #[derive(Debug, Clone)]
@@ -11,10 +12,15 @@ pub struct Bird {
     pub speed: f32,
     pub acceleration: f32,
     pub is_alive: bool,
+
+    pub brain: Network,
+    pub fitness: f32,
 }
 
 impl Bird {
-    pub fn new() -> Self {
+    pub fn new(brain: Option<Network>) -> Self {
+        let brain = brain.unwrap_or_else(|| Network::new(CONFIG.network_layers.to_vec()));
+
         Self {
             x: screen_width() / 2.0,
             y: screen_height() / 2.0,
@@ -23,6 +29,8 @@ impl Bird {
             speed: 0.0,
             acceleration: CONFIG.gravity,
             is_alive: true,
+            brain,
+            fitness: 0.0,
         }
     }
 
@@ -33,6 +41,7 @@ impl Bird {
     pub fn update(&mut self) {
         self.speed += self.acceleration;
         self.y -= self.speed;
+        self.fitness += 1.0;
     }
 
     pub fn draw(&self) {
@@ -40,12 +49,13 @@ impl Bird {
     }
 
     pub fn reset(&mut self) {
-        *self = Self::new();
+        let brain = self.brain.clone();
+        *self = Self::new(Some(brain));
     }
 }
 
 impl Default for Bird {
     fn default() -> Self {
-        Self::new()
+        Self::new(None)
     }
 }

@@ -16,6 +16,10 @@ pub struct GameConfig {
     pub obstacles_speed: f32,
     pub obstacles_acceleration: f32,
     pub obstacles_gap: f32,
+
+    pub population_size: usize,
+    pub mutation_rate: f32,
+    pub network_layers: &'static [usize],
 }
 
 pub const CONFIG: GameConfig = GameConfig {
@@ -34,4 +38,8 @@ pub const CONFIG: GameConfig = GameConfig {
     obstacles_speed: 5.0,
     obstacles_acceleration: 0.001,
     obstacles_gap: 400.0,
+
+    population_size: 50,
+    mutation_rate: 0.1,
+    network_layers: &[4, 6, 1],
 };
