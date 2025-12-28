@@ -69,14 +69,16 @@ struct Obstacle {
 
 impl Obstacle {
     fn new() -> Obstacle {
+        let gap = rand::gen_range(CONFIG.obstacle_min_gap, CONFIG.obstacle_max_gap);
+        let y = rand::gen_range(
+            CONFIG.obstacle_min_y,
+            screen_height() - CONFIG.obstacle_min_y - gap,
+        );
+
         Obstacle {
             x: screen_width(),
-            y: rand::gen_range(
-                CONFIG.obstacle_min_y,
-                // screen_height() - CONFIG.obstacle_min_y,
-                CONFIG.obstacle_min_y + 10.0,
-            ),
-            gap: rand::gen_range(CONFIG.obstacle_min_gap, CONFIG.obstacle_max_gap),
+            y,
+            gap,
             width: CONFIG.obstacle_width,
             color: CONFIG.obstacle_color,
         }
