@@ -37,11 +37,11 @@ pub const CONFIG: GameConfig = GameConfig {
     obstacle_min_y: 250.0,
 
     obstacles_speed: 5.0,
-    obstacles_acceleration: 0.001,
+    obstacles_acceleration: 0.0,
     obstacles_gap: 400.0,
 
     population_size: 100,
     mutation_rate: 0.1,
     network_layers: &[5, 8, 1],
-    speed_multiplier: 10,
+    speed_multiplier: 100,
 };

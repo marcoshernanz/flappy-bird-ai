@@ -9,6 +9,7 @@ pub struct Game {
     pub obstacle_manager: ObstacleManager,
     pub game_over: bool,
     pub generation: u32,
+    pub high_score: f32,
 }
 
 impl Game {
@@ -20,6 +21,7 @@ impl Game {
             obstacle_manager: ObstacleManager::new(),
             game_over: false,
             generation: 1,
+            high_score: 0.0,
         }
     }
 
@@ -68,6 +70,11 @@ impl Game {
         if self.birds.iter().all(|b| !b.is_alive) {
             self.game_over = true;
         }
+
+        let current_max_fitness = self.birds.iter().map(|b| b.fitness).fold(0.0, f32::max);
+        if current_max_fitness > self.high_score {
+            self.high_score = current_max_fitness;
+        }
     }
 
     pub fn draw(&self) {
@@ -84,12 +91,44 @@ impl Game {
         draw_text(
             &format!("Generation: {}", self.generation),
             10.0,
-            20.0,
+            30.0,
             30.0,
             WHITE,
         );
         let alive_count = self.birds.iter().filter(|b| b.is_alive).count();
-        draw_text(&format!("Alive: {}", alive_count), 10.0, 50.0, 30.0, WHITE);
+        draw_text(&format!("Alive: {}", alive_count), 10.0, 60.0, 30.0, WHITE);
+
+        let current_score = self.birds.iter().map(|b| b.fitness).fold(0.0, f32::max);
+        let score_text = format!("Score: {:.0}", current_score);
+        let best_text = format!("Best: {:.0}", self.high_score);
+
+        let score_dims = measure_text(&score_text, None, 30, 1.0);
+        let best_dims = measure_text(&best_text, None, 30, 1.0);
+
+        draw_text(
+            &score_text,
+            screen_width() / 2.0 - score_dims.width / 2.0,
+            30.0,
+            30.0,
+            WHITE,
+        );
+        draw_text(
+            &best_text,
+            screen_width() / 2.0 - best_dims.width / 2.0,
+            60.0,
+            30.0,
+            WHITE,
+        );
+
+        let speed_text = format!("Speed: {:.1}", self.obstacle_manager.speed);
+        let speed_dims = measure_text(&speed_text, None, 30, 1.0);
+        draw_text(
+            &speed_text,
+            screen_width() - speed_dims.width - 10.0,
+            30.0,
+            30.0,
+            WHITE,
+        );
     }
 
     fn check_collisions(&mut self) {
