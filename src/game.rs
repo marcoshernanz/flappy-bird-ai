@@ -137,7 +137,7 @@ impl Game {
         self.birds
             .sort_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap());
 
-        let top_count = (CONFIG.population_size as f32 * 0.1) as usize;
+        let top_count = ((CONFIG.population_size as f32 * 0.1) as usize).max(1);
         let top_birds: Vec<Bird> = self.birds.iter().take(top_count).cloned().collect();
 
         self.birds.clear();
