@@ -42,6 +42,6 @@ pub const CONFIG: GameConfig = GameConfig {
 
     population_size: 100,
     mutation_rate: 0.1,
-    network_layers: &[4, 6, 1],
+    network_layers: &[5, 8, 1],
     speed_multiplier: 10,
 };

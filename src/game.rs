@@ -36,6 +36,7 @@ impl Game {
             .find(|o| o.x + o.width > self.birds[0].x);
 
         if let Some(obstacle) = next_obstacle {
+            let obstacle_speed = self.obstacle_manager.speed;
             for bird in &mut self.birds {
                 if bird.is_alive {
                     let inputs = vec![
@@ -43,6 +44,7 @@ impl Game {
                         bird.speed / 10.0,
                         (obstacle.x - bird.x) / screen_width(),
                         obstacle.y / screen_height(),
+                        obstacle_speed / 10.0,
                     ];
 
                     let output = bird.brain.feed_forward(inputs);
@@ -132,21 +134,25 @@ impl Game {
     }
 
     fn next_generation(&mut self) {
-        let best_bird = self
-            .birds
-            .iter()
-            .max_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap())
-            .unwrap()
-            .clone();
+        self.birds
+            .sort_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap());
+
+        let top_count = (CONFIG.population_size as f32 * 0.1) as usize;
+        let top_birds: Vec<Bird> = self.birds.iter().take(top_count).cloned().collect();
 
         self.birds.clear();
 
-        self.birds.push(Bird::new(Some(best_bird.brain.clone())));
+        for bird in &top_birds {
+            self.birds.push(Bird::new(Some(bird.brain.clone())));
+        }
 
-        for _ in 1..CONFIG.population_size {
-            let mut new_brain = best_bird.brain.clone();
-            new_brain.mutate(CONFIG.mutation_rate);
-            self.birds.push(Bird::new(Some(new_brain)));
+        while self.birds.len() < CONFIG.population_size {
+            let parent = &top_birds[rand::gen_range(0, top_count)];
+
+            let mut children_brain = parent.brain.clone();
+            children_brain.mutate(CONFIG.mutation_rate);
+
+            self.birds.push(Bird::new(Some(children_brain)));
         }
 
         self.obstacle_manager.reset();
