@@ -3,7 +3,7 @@ use crate::collisions::circle_intersects_rect;
 use crate::config::CONFIG;
 use crate::obstacle::ObstacleManager;
 use macroquad::prelude::*;
-use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
+use rayon::prelude::*;
 
 pub struct Game {
     pub birds: Vec<Bird>,
@@ -32,10 +32,6 @@ impl Game {
             return;
         }
 
-        let obstacle_speed = self.obstacle_manager.speed;
-        let screen_height = screen_height();
-        let screen_width = screen_width();
-
         let next_obstacle = self
             .obstacle_manager
             .obstacles
@@ -43,6 +39,12 @@ impl Game {
             .find(|o| o.x + o.width > self.birds[0].x);
 
         if let Some(obstacle) = next_obstacle {
+            let screen_height = screen_height();
+            let screen_width = screen_width();
+            let obstacle_speed = self.obstacle_manager.speed;
+            let obstacle_x = obstacle.x;
+            let obstacle_y = obstacle.y;
+
             self.birds.par_iter_mut().for_each(|bird| {
                 if !bird.is_alive {
                     return;
@@ -51,8 +53,8 @@ impl Game {
                 let inputs = vec![
                     bird.y / screen_height,
                     bird.speed / 10.0,
-                    (obstacle.x - bird.x) / screen_width,
-                    obstacle.y / screen_height,
+                    (obstacle_x - bird.x) / screen_width,
+                    obstacle_y / screen_height,
                     obstacle_speed / 10.0,
                 ];
 
