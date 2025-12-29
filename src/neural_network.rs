@@ -2,34 +2,40 @@ use macroquad::rand::gen_range;
 
 #[derive(Clone, Debug)]
 struct Layer {
-    weights: Vec<Vec<f32>>,
+    weights: Vec<f32>,
     biases: Vec<f32>,
+    inputs: usize,
+    outputs: usize,
 }
 
 impl Layer {
     fn new(inputs: usize, outputs: usize) -> Self {
-        let mut weights = vec![vec![0.0; inputs]; outputs];
+        let mut weights = vec![0.0; outputs * inputs];
         let mut biases = vec![0.0; outputs];
 
         for i in 0..outputs {
             biases[i] = gen_range(-1.0, 1.0);
             for j in 0..inputs {
-                weights[i][j] = gen_range(-1.0, 1.0);
+                weights[i * inputs + j] = gen_range(-1.0, 1.0);
             }
         }
 
-        Self { weights, biases }
+        Self {
+            weights,
+            biases,
+            inputs,
+            outputs,
+        }
     }
 
     fn feed_forward(&self, inputs: &[f32]) -> Vec<f32> {
-        let mut outputs = vec![0.0; self.biases.len()];
+        let mut outputs = vec![0.0; self.outputs];
 
-        for i in 0..self.biases.len() {
+        for i in 0..self.outputs {
             let mut sum = self.biases[i];
-            for j in 0..inputs.len() {
-                sum += inputs[j] * self.weights[i][j];
+            for j in 0..self.inputs {
+                sum += inputs[j] * self.weights[i * self.inputs + j];
             }
-            // Activation function (ReLU)
             outputs[i] = sum.max(0.0);
         }
 
@@ -67,11 +73,9 @@ impl Network {
                     *bias += gen_range(-0.1, 0.1);
                 }
             }
-            for row in &mut layer.weights {
-                for weight in row {
-                    if gen_range(0.0, 1.0) < rate {
-                        *weight += gen_range(-0.1, 0.1);
-                    }
+            for weight in &mut layer.weights {
+                if gen_range(0.0, 1.0) < rate {
+                    *weight += gen_range(-0.1, 0.1);
                 }
             }
         }
