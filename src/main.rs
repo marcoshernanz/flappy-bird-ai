@@ -8,6 +8,8 @@ mod obstacle;
 use game::Game;
 use macroquad::prelude::*;
 
+use crate::config::CONFIG;
+
 fn window_conf() -> Conf {
     Conf {
         window_title: String::from("AI Flappy Bird"),
@@ -23,7 +25,13 @@ async fn main() {
     let mut game = Game::new();
 
     loop {
-        game.update();
+        if is_key_down(KeyCode::Space) {
+            game.update();
+        } else {
+            for _ in 0..CONFIG.speed_multiplier {
+                game.update();
+            }
+        }
         game.draw();
 
         next_frame().await

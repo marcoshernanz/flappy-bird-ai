@@ -20,6 +20,7 @@ pub struct GameConfig {
     pub population_size: usize,
     pub mutation_rate: f32,
     pub network_layers: &'static [usize],
+    pub speed_multiplier: u32,
 }
 
 pub const CONFIG: GameConfig = GameConfig {
@@ -27,7 +28,7 @@ pub const CONFIG: GameConfig = GameConfig {
     jump_force: 10.0,
 
     bird_size: 50.0,
-    bird_color: WHITE,
+    bird_color: Color::new(1.0, 1.0, 1.0, 0.5),
 
     obstacle_width: 30.0,
     obstacle_color: RED,
@@ -39,7 +40,8 @@ pub const CONFIG: GameConfig = GameConfig {
     obstacles_acceleration: 0.001,
     obstacles_gap: 400.0,
 
-    population_size: 50,
+    population_size: 100,
     mutation_rate: 0.1,
     network_layers: &[4, 6, 1],
+    speed_multiplier: 10,
 };
