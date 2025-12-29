@@ -3,6 +3,7 @@ use crate::collisions::circle_intersects_rect;
 use crate::config::CONFIG;
 use crate::obstacle::ObstacleManager;
 use macroquad::prelude::*;
+use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
 
 pub struct Game {
     pub birds: Vec<Bird>,
@@ -31,6 +32,10 @@ impl Game {
             return;
         }
 
+        let obstacle_speed = self.obstacle_manager.speed;
+        let screen_height = screen_height();
+        let screen_width = screen_width();
+
         let next_obstacle = self
             .obstacle_manager
             .obstacles
@@ -38,29 +43,32 @@ impl Game {
             .find(|o| o.x + o.width > self.birds[0].x);
 
         if let Some(obstacle) = next_obstacle {
-            let obstacle_speed = self.obstacle_manager.speed;
-            for bird in &mut self.birds {
-                if bird.is_alive {
-                    let inputs = vec![
-                        bird.y / screen_height(),
-                        bird.speed / 10.0,
-                        (obstacle.x - bird.x) / screen_width(),
-                        obstacle.y / screen_height(),
-                        obstacle_speed / 10.0,
-                    ];
-
-                    let output = bird.brain.feed_forward(inputs);
-                    if output[0] > 0.5 {
-                        bird.jump();
-                    }
+            self.birds.par_iter_mut().for_each(|bird| {
+                if !bird.is_alive {
+                    return;
                 }
-            }
-        }
 
-        for bird in &mut self.birds {
-            if bird.is_alive {
+                let inputs = vec![
+                    bird.y / screen_height,
+                    bird.speed / 10.0,
+                    (obstacle.x - bird.x) / screen_width,
+                    obstacle.y / screen_height,
+                    obstacle_speed / 10.0,
+                ];
+
+                let output = bird.brain.feed_forward(inputs);
+                if output[0] > 0.5 {
+                    bird.jump();
+                }
+
                 bird.update();
-            }
+            });
+        } else {
+            self.birds.par_iter_mut().for_each(|bird| {
+                if bird.is_alive {
+                    bird.update();
+                }
+            });
         }
 
         self.obstacle_manager.update();
@@ -132,17 +140,20 @@ impl Game {
     }
 
     fn check_collisions(&mut self) {
-        for bird in &mut self.birds {
+        let obstacles = &self.obstacle_manager.obstacles;
+        let screen_height = screen_height();
+
+        self.birds.par_iter_mut().for_each(|bird| {
             if !bird.is_alive {
-                continue;
+                return;
             }
 
-            if bird.y + bird.r > screen_height() || bird.y - bird.r < 0.0 {
+            if bird.y + bird.r > screen_height || bird.y - bird.r < 0.0 {
                 bird.is_alive = false;
-                continue;
+                return;
             }
 
-            for obstacle in &self.obstacle_manager.obstacles {
+            for obstacle in obstacles {
                 if circle_intersects_rect(
                     bird.x,
                     bird.y,
@@ -151,25 +162,20 @@ impl Game {
                     0.0,
                     obstacle.width,
                     obstacle.y,
-                ) {
-                    bird.is_alive = false;
-                    break;
-                }
-
-                if circle_intersects_rect(
+                ) || circle_intersects_rect(
                     bird.x,
                     bird.y,
                     bird.r,
                     obstacle.x,
                     obstacle.y + obstacle.gap,
                     obstacle.width,
-                    screen_height() - obstacle.y - obstacle.gap,
+                    screen_height - obstacle.y - obstacle.gap,
                 ) {
                     bird.is_alive = false;
                     break;
                 }
             }
-        }
+        });
     }
 
     fn next_generation(&mut self) {
